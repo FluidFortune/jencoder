@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<!--
+Pisces Moon OS — JenCoder Web Edition
+Copyright (C) 2026 Eric Becker / Fluid Fortune
+SPDX-License-Identifier: AGPL-3.0-or-later
+fluidfortune.com
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JenCoder — Pisces Moon P4 IDE</title>
+<link rel="stylesheet" href="ide.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+</head>
+<body>
+
+<!-- ─────────────────────── HEADER ─────────────────────── -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">⬢</span>
+    <h1>JenCoder <span class="dim">— Pisces Moon P4 IDE</span></h1>
+    <span class="version">v1.0 "Origin" · ESP32-P4 · LVGL</span>
+  </div>
+  <nav class="topbar-actions">
+    <button id="btn-new"      class="btn">New</button>
+    <button id="btn-template" class="btn">Templates</button>
+    <button id="btn-run"      class="btn primary">▶ Run Preview</button>
+    <button id="btn-stop"     class="btn" style="display:none">■ Stop</button>
+    <button id="btn-build"    class="btn moonshot">⚡ Build &amp; Flash</button>
+    <button id="btn-export"   class="btn">⊞ Export</button>
+    <button id="btn-copy"     class="btn">📋 Copy</button>
+    <button id="btn-help"     class="btn">?</button>
+  </nav>
+</header>
+
+<!-- ─────────────────────── MAIN LAYOUT ─────────────────── -->
+<main class="workspace">
+
+  <!-- LEFT: file tree + API reference -->
+  <aside class="sidebar left">
+    <div class="panel-title">App</div>
+    <div class="app-meta" id="app-meta">
+      <div class="meta-row"><span class="meta-key">id</span><span id="meta-id" class="meta-val">--</span></div>
+      <div class="meta-row"><span class="meta-key">display</span><span id="meta-display" class="meta-val">--</span></div>
+      <div class="meta-row"><span class="meta-key">category</span><span id="meta-category" class="meta-val">--</span></div>
+    </div>
+
+    <div class="panel-title">Files</div>
+    <ul id="file-list" class="file-list">
+      <li class="file-item active" data-file="pm_app_myapp.c">
+        <span class="file-icon">📄</span><span id="file-name">pm_app_myapp.c</span>
+      </li>
+    </ul>
+
+    <div class="panel-title">API Reference</div>
+    <div class="api-search">
+      <input type="text" id="api-filter" placeholder="Search API…">
+    </div>
+    <div id="api-tree" class="api-tree"></div>
+  </aside>
+
+  <!-- CENTER: editor -->
+  <section class="editor-pane">
+    <div class="editor-tabs">
+      <div class="tab active" id="active-tab" data-file="pm_app_myapp.c">pm_app_myapp.c</div>
+    </div>
+    <div id="editor"></div>
+    <div class="status-bar">
+      <span id="status-msg">Ready</span>
+      <span class="status-spacer"></span>
+      <span id="status-line">Line 1, Col 1</span>
+    </div>
+  </section>
+
+  <!-- RIGHT: live preview -->
+  <aside class="sidebar right">
+    <div class="panel-title">Live Preview <span class="dim">— CrowPanel Advanced 7"</span></div>
+
+    <div class="device-meta">
+      <span>ESP32-P4 + ESP32-C6</span> ·
+      <span>1024×600</span> ·
+      <span>Touch + virtual gamepad</span>
+    </div>
+
+    <div class="device-frame">
+      <div class="device-bezel" id="device-bezel">
+        <div id="preview-viewport" class="preview-viewport"></div>
+        <div class="device-controls">
+          <span class="key-hint">Mouse = Touch · Arrow keys = D-pad · Enter = A · Shift = B · Type = Keyboard</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-title">Console</div>
+    <div id="console" class="console"></div>
+
+    <div class="panel-title">Hardware</div>
+    <div class="hw-stats">
+      <div class="hw-stat"><span>Free PSRAM</span><b id="hw-psram">--</b></div>
+      <div class="hw-stat"><span>Free Heap</span><b id="hw-heap">--</b></div>
+      <div class="hw-stat"><span>FPS</span><b id="hw-fps">--</b></div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- ─────────────────────── HELP MODAL ─────────────────── -->
+<div id="modal-help" class="modal" style="display:none">
+  <div class="modal-content">
+    <h2>How JenCoder Works</h2>
+    <p>JenCoder is the browser-based IDE for <b>Pisces Moon OS P4</b> —
+       the dual-MCU implementation targeting boards with an
+       <b>ESP32-P4</b> application processor and an <b>ESP32-C6</b>
+       always-on radio coprocessor.</p>
+
+    <p>The reference board is the <b>ELECROW CrowPanel Advanced 7"</b>
+       — a $46 ESP32-P4 dev board with a 1024×600 MIPI-DSI touchscreen
+       and an onboard C6.</p>
+
+    <p>If you're coming from Lety, the workflow is the same. The
+       <em>language</em> changes from Arduino C++ to C, and the
+       <em>build system</em> changes from PlatformIO to ESP-IDF.</p>
+
+    <h3>Three workflow paths</h3>
+    <ul>
+      <li><b>⚡ Build &amp; Flash</b> — Cloud or local backend runs
+        <code>idf.py build</code> → returns a <code>.bin</code> →
+        flashes via Web Serial. Requires Chrome, Edge, or Opera on
+        desktop.</li>
+      <li><b>⊞ Export</b> — Generates <code>pm_app_*.c</code> +
+        <code>pm_app_*.h</code> + <code>integration.txt</code> as a
+        zip you can drop into a local clone of the
+        <code>pisces-moon-os-p4</code> tree and build with VS Code
+        + the Espressif IDF extension.</li>
+      <li><b>📋 Copy</b> — Plain source to the clipboard for fast
+        paste into your editor of choice.</li>
+    </ul>
+
+    <h3>The app contract</h3>
+    <p>Every app on Pisces Moon P4 implements the
+       <code>pm_app_t</code> struct:</p>
+    <pre>typedef struct {
+    const char*    id;
+    const char*    display_name;
+    pm_category_t  category;
+    uint16_t       icon_id;
+
+    void (*init)(void);
+    void (*enter)(void);
+    void (*tick)(uint32_t elapsed_ms);
+    void (*exit)(void);
+    void (*deinit)(void);
+} pm_app_t;</pre>
+
+    <p><code>init()</code> runs once at boot; <code>enter()</code>
+       runs whenever the user opens the app; <code>tick()</code> is
+       periodic; <code>exit()</code> on back.</p>
+
+    <h3>UI is LVGL via the pm_ui kit</h3>
+    <p>Apps build their screen by calling <code>pm_ui_screen()</code>,
+       <code>pm_ui_titlebar()</code>, <code>pm_ui_card()</code>,
+       <code>pm_ui_kv_row()</code>, etc. The kit enforces a coherent
+       look across all 56+ apps.</p>
+
+    <h3>Modular hardware via pm_peer</h3>
+    <p>Apps don't ask "is there a PN532 attached?" — they ask
+       "is there an <code>nfc_read</code> peer available?":</p>
+    <pre>pm_peer_t* p = pm_peer_find("nfc_read", PM_PEER_ROLE_ANY);
+if (p) {
+    pm_peer_call(p, "read_tag", NULL);
+} else {
+    // graceful "no NFC available" branch
+}</pre>
+
+    <h3>Preview limitations</h3>
+    <ul>
+      <li>The preview is an HTML/CSS renderer of the LVGL widget kit.
+        Layout, colors, text, kv-rows, lists, log panels, buttons,
+        chips, status dots, meter bars, keypads — all rendered.</li>
+      <li>Hardware (real WiFi/BLE/LoRa/NFC/GPS/Camera) is replaced
+        by deterministic mocks in <code>jencoder_peer.js</code>.
+        Scanners show fake networks; GPS walks slowly around a
+        fixed origin; NFC tags cycle.</li>
+      <li>Real-time SD I/O is stubbed but file paths are
+        plumbed.</li>
+      <li>Heavy custom LVGL calls outside the <code>pm_ui_*</code>
+        kit may render approximately but will compile fine for
+        hardware.</li>
+    </ul>
+
+    <h3>Companion projects</h3>
+    <p>JenCoder Web Edition is the browser counterpart to <b>JenCoder</b>
+       (the desktop tool running inside <b>Jennifer OS</b>). The two
+       share the same C source format and templates. Anything you
+       build here drops into Jennifer OS unchanged.</p>
+
+    <p>For the S3 cousin board family, use
+       <a href="https://lety.fluidfortune.com" target="_blank">Lety</a>.</p>
+
+    <button class="btn primary" onclick="document.getElementById('modal-help').style.display='none'">Got it</button>
+  </div>
+</div>
+
+<!-- ─────────────────────── TEMPLATE MODAL ─────────────────── -->
+<div id="modal-template" class="modal" style="display:none">
+  <div class="modal-content">
+    <h2>Choose a Template</h2>
+    <div class="template-grid" id="template-grid"></div>
+    <button class="btn" onclick="document.getElementById('modal-template').style.display='none'">Cancel</button>
+  </div>
+</div>
+
+<!-- ─────────────────────── BUILD & FLASH MODAL ─────────────────── -->
+<div id="modal-build" class="modal" style="display:none">
+  <div class="modal-content build-modal-content">
+    <div class="build-header">
+      <span class="moonshot-icon">⚡</span>
+      <h2 id="build-title">Build &amp; Flash to CrowPanel</h2>
+    </div>
+
+    <div class="build-options">
+      <label class="opt-row">
+        <input type="checkbox" id="opt-local-backend">
+        Use local backend (<code>http://localhost:3000</code>)
+      </label>
+    </div>
+
+    <div id="build-stages" class="build-stages">
+      <div class="build-stage" id="stage-compile">
+        <span class="stage-icon">○</span>
+        <div class="stage-text">
+          <div class="stage-title">Compile</div>
+          <div class="stage-detail">Server runs idf.py build for esp32p4</div>
+        </div>
+      </div>
+      <div class="build-stage" id="stage-connect">
+        <span class="stage-icon">○</span>
+        <div class="stage-text">
+          <div class="stage-title">Connect</div>
+          <div class="stage-detail">Web Serial to CrowPanel</div>
+        </div>
+      </div>
+      <div class="build-stage" id="stage-flash">
+        <span class="stage-icon">○</span>
+        <div class="stage-text">
+          <div class="stage-title">Flash</div>
+          <div class="stage-detail">Write firmware via esptool-js</div>
+        </div>
+      </div>
+      <div class="build-stage" id="stage-run">
+        <span class="stage-icon">○</span>
+        <div class="stage-text">
+          <div class="stage-title">Run</div>
+          <div class="stage-detail">Hard reset, launcher boots, your app appears</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="build-progress"></div></div>
+      <div class="progress-msg" id="build-msg">Ready</div>
+    </div>
+
+    <div class="build-console" id="build-console"></div>
+
+    <div class="build-actions">
+      <button class="btn" id="btn-build-cancel">Close</button>
+      <button class="btn primary" id="btn-build-start">Start Build &amp; Flash</button>
+    </div>
+
+    <p class="build-note">
+      <strong>Requires:</strong> Chrome, Edge, or Opera on desktop (Web Serial).
+      CrowPanel connected via USB-C.
+    </p>
+  </div>
+</div>
+
+<!-- Monaco editor loader -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="jencoder_api.js"></script>
+<script src="jencoder_templates.js"></script>
+<script src="jencoder_hal.js"></script>
+<script src="jencoder_peer.js"></script>
+<script src="jencoder_emulator.js"></script>
+<script src="jencoder_build.js"></script>
+<script src="ide.js"></script>
+
+</body>
+</html>
