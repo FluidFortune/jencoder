@@ -1,0 +1,23 @@
+{
+  "name": "jencoder-build",
+  "version": "1.0.0",
+  "description": "JenCoder cloud compile backend for Pisces Moon OS P4 (ESP-IDF)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev":   "node --watch server.js"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Eric Becker / Fluid Fortune",
+  "homepage": "https://jencoder.fluidfortune.com",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors":    "^2.8.5",
+    "helmet":  "^8.0.0",
+    "rate-limiter-flexible": "^5.0.4"
+  }
+}
